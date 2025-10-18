@@ -710,7 +710,7 @@ struct WeeklyProvider: TimelineProvider {
         }
         let sundayStart = calendar.startOfDay(for: sunday)
 
-        return habits.prefix(5).map { habit in
+        return habits.prefix(4).map { habit in
             var weeklyLevels: [CompletionLevel?] = []
 
             for dayOffset in 0..<7 {
@@ -742,67 +742,97 @@ struct WeeklyProvider: TimelineProvider {
 struct WeeklyProgressWidgetView: View {
     var entry: WeeklyProvider.Entry
 
-    var body: some View {
-        VStack(spacing: 0) {
-            // 요일 헤더
-            HStack(spacing: 0) {
-                Color.clear
-                    .frame(width: 80)
+    // 고정 상수
+    private let habitNameWidth: CGFloat = 70
+    private let horizontalPadding: CGFloat = 10
+    private let boxSpacing: CGFloat = 3
 
-                HStack(spacing: 4) {
-                    ForEach(["일", "월", "화", "수", "목", "금", "토"], id: \.self) { day in
-                        Text(day)
-                            .font(.system(size: 9, weight: .semibold))
-                            .foregroundColor(.secondary)
-                            .frame(maxWidth: .infinity)
+    var body: some View {
+        GeometryReader { geometry in
+            let availableWidth = geometry.size.width - (horizontalPadding * 2) - habitNameWidth
+            let totalSpacing = boxSpacing * 6 // 7개 박스 사이 6개 간격
+            let boxWidth = (availableWidth - totalSpacing) / 7
+
+            VStack(spacing: 0) {
+                // 요일 헤더
+                HStack(spacing: 0) {
+                    // 습관 이름 영역
+                    Text("")
+                        .frame(width: habitNameWidth, alignment: .leading)
+
+                    // 요일 영역 (박스와 정확히 동일한 크기)
+                    HStack(spacing: boxSpacing) {
+                        ForEach(["일", "월", "화", "수", "목", "금", "토"], id: \.self) { day in
+                            Text(day)
+                                .font(.system(size: 8, weight: .semibold))
+                                .foregroundColor(.secondary)
+                                .frame(width: boxWidth * 0.85)
+                        }
                     }
                 }
-            }
-            .padding(.horizontal, 12)
-            .padding(.top, 12)
-            .padding(.bottom, 8)
+                .padding(.horizontal, horizontalPadding)
+                .padding(.bottom, 4)
 
-            // 습관 목록
-            if entry.habits.isEmpty {
-                VStack(spacing: 8) {
-                    Image(systemName: "calendar")
-                        .font(.title2)
-                        .foregroundColor(.secondary)
-                    Text("습관을 추가하세요")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                .frame(maxHeight: .infinity)
-            } else {
-                VStack(spacing: 6) {
-                    ForEach(entry.habits) { habit in
-                        HStack(spacing: 0) {
-                            // 습관 이름
-                            HStack(spacing: 6) {
-                                Circle()
-                                    .fill(Color(hex: habit.colorHex))
-                                    .frame(width: 14, height: 14)
+                // 습관 목록
+                if entry.habits.isEmpty {
+                    VStack(spacing: 8) {
+                        Image(systemName: "calendar")
+                            .font(.title2)
+                            .foregroundColor(.secondary)
+                        Text("습관을 추가하세요")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(maxHeight: .infinity)
+                } else {
+                    VStack(spacing: 5) {
+                        ForEach(entry.habits) { habit in
+                            HStack(spacing: 0) {
+                                // 습관 이름
+                                HStack(spacing: 5) {
+                                    Circle()
+                                        .fill(Color(hex: habit.colorHex))
+                                        .frame(width: 10, height: 10)
 
-                                 Text(habit.title)
-                                     .font(.system(size: 11))
-                                     .foregroundColor(.primary)
-                                     .lineLimit(1)
-                            }
-                            .frame(width: 80, alignment: .leading)
+                                     Text(habit.title)
+                                         .font(.system(size: 9))
+                                         .foregroundColor(.primary)
+                                         .lineLimit(1)
+                                }
+                                .frame(width: habitNameWidth, alignment: .leading)
 
-                            // 주간 완료 박스
-                            HStack(spacing: 4) {
-                                ForEach(0..<7, id: \.self) { index in
-                                    WeekDayBox(level: habit.weeklyLevels[index], habitColor: habit.colorHex)
+                                // 주간 완료 박스
+                                HStack(spacing: boxSpacing) {
+                                    ForEach(0..<7, id: \.self) { index in
+                                        RoundedRectangle(cornerRadius: 2.5)
+                                            .fill(boxColor(for: habit.weeklyLevels[index], habitColor: habit.colorHex))
+                                            .frame(width: boxWidth * 0.85, height: boxWidth * 0.85)
+                                    }
                                 }
                             }
+                            .padding(.horizontal, horizontalPadding)
                         }
-                        .frame(height: 28)
-                        .padding(.horizontal, 12)
                     }
+                    .padding(.bottom, 6)
                 }
-                .padding(.bottom, 12)
             }
+        }
+    }
+
+    private func boxColor(for level: CompletionLevel?, habitColor: String) -> Color {
+        guard let level = level else {
+            return Color.gray.opacity(0.15)
+        }
+
+        switch level {
+        case .skip, .none:
+            return Color.gray.opacity(0.15)
+        case .mini:
+            return Color(hex: habitColor).opacity(0.5)
+        case .more:
+            return Color(hex: habitColor).opacity(0.75)
+        case .max:
+            return Color(hex: habitColor)
         }
     }
 }

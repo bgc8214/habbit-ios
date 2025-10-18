@@ -332,16 +332,23 @@ struct HabitCardActiveView: View {
 
             // TODAY 버튼 - 체크 페이지로 이동 (상위 레이어)
             NavigationLink(destination: HabitCheckView(habit: habit, viewModel: viewModel)) {
-                Circle()
-                    .fill(Color.white)
-                    .frame(width: 50, height: 50)
-                    .overlay(
+                ZStack {
+                    Circle()
+                        .fill(todayButtonColor)
+                        .frame(width: 50, height: 50)
+
+                    if isTodayCompleted {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundColor(.white)
+                    } else {
                         Text("TODAY")
                             .font(.caption)
                             .fontWeight(.bold)
                             .foregroundColor(habitColor)
-                    )
-                    .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
+                    }
+                }
+                .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
             }
             .buttonStyle(PlainButtonStyle())
             .padding(.trailing, 16)
@@ -352,8 +359,23 @@ struct HabitCardActiveView: View {
     private var habitColor: Color {
         Color(hex: habit.colorHex)
     }
-    
-    
+
+    private var isTodayCompleted: Bool {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        return habit.records.contains { record in
+            calendar.isDate(record.date, inSameDayAs: today) && record.level != .none
+        }
+    }
+
+    private var todayButtonColor: Color {
+        if isTodayCompleted {
+            return habitColor // 완료 시 습관 색상
+        } else {
+            return .white // 미완료 시 흰색
+        }
+    }
+
     private func formatStartDate(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yy. M. d."
@@ -418,25 +440,25 @@ struct ProgressDotsView: View {
         let record = cycleRecords[index]
         let currentDay = viewModel.getCurrentCycleDay(for: habit)
 
-        // 오늘 날짜면 줄무늬 표시
-        if index + 1 == currentDay {
-            return .white.opacity(0.3) // 오늘은 약간 밝게
-        }
-
-        // 기록이 있으면 레벨에 따라 색상 표시
-        if let level = record?.level {
+        // 기록이 있으면 레벨에 따라 색상 표시 (오늘 날짜 체크보다 우선)
+        if let level = record?.level, level != .none {
             switch level {
             case .skip:
                 return .white.opacity(0.1)
             case .mini:
-                return .white.opacity(0.5)
+                return .white.opacity(0.5) // MINI: 50%
             case .more:
-                return .white.opacity(0.7)
+                return .white.opacity(0.75) // MORE: 75%
             case .max:
-                return .white
+                return .white // MAX: 100%
             case .none:
                 return .white.opacity(0.1)
             }
+        }
+
+        // 오늘 날짜이고 기록이 없으면 약간 밝게
+        if index + 1 == currentDay {
+            return .white.opacity(0.3) // 오늘은 약간 밝게
         }
 
         // 미완료
