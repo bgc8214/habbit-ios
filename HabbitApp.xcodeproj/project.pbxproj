@@ -20,10 +20,10 @@
 		534E03A173CE9222EEC75144 /* HabitCheckView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 258F4CB823A5769C9A458151 /* HabitCheckView.swift */; };
 		5DCEF68FC7733EA6B17DF29B /* HabitDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03E4B3D03FDA9DE1155F582B /* HabitDetailView.swift */; };
 		604E4476625FBA7AA789F5F7 /* HabbitAppWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36E5BBA1E483681F5F2BBAC6 /* HabbitAppWidget.swift */; };
-		688F9E402E9EB5290037BC6D /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 688F9E3F2E9EB5290037BC6D /* NotificationManager.swift */; };
 		688F9E552E9F66CE0037BC6D /* PieChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 688F9E542E9F66CE0037BC6D /* PieChartView.swift */; };
 		688F9E572E9F66E30037BC6D /* CycleReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 688F9E562E9F66E30037BC6D /* CycleReviewView.swift */; };
 		688F9E592EA0F78A0037BC6D /* EditHabitView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 688F9E582EA0F78A0037BC6D /* EditHabitView.swift */; };
+		40F43B940F074C2B892F43B6 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B0A09B207714657BDE09AC5 /* NotificationManager.swift */; };
 		713050A7717D4216E52F04F2 /* HabbitAppApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE994B0C678C7596CA8B4A10 /* HabbitAppApp.swift */; };
 		AA835E06B56B7A8F182E62DF /* Habit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 627392544BD8F09F48E631BC /* Habit.swift */; };
 		AD6863567C425A933C61A7D6 /* HabbitAppWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = D89B7C7FEF7866EBBF2A947D /* HabbitAppWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -72,7 +72,7 @@
 		36E5BBA1E483681F5F2BBAC6 /* HabbitAppWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HabbitAppWidget.swift; sourceTree = "<group>"; };
 		4FCC325E77A240F5AA09D780 /* CompletionLevel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompletionLevel.swift; sourceTree = "<group>"; };
 		627392544BD8F09F48E631BC /* Habit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Habit.swift; sourceTree = "<group>"; };
-		688F9E3F2E9EB5290037BC6D /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
+		1B0A09B207714657BDE09AC5 /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationManager.swift; sourceTree = "<group>"; };
 		688F9E542E9F66CE0037BC6D /* PieChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PieChartView.swift; sourceTree = "<group>"; };
 		688F9E562E9F66E30037BC6D /* CycleReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CycleReviewView.swift; sourceTree = "<group>"; };
 		688F9E582EA0F78A0037BC6D /* EditHabitView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditHabitView.swift; sourceTree = "<group>"; };
@@ -95,7 +95,6 @@
 		4C63FBBBEACF1B4E4055FF38 /* HabbitApp */ = {
 			isa = PBXGroup;
 			children = (
-				688F9E3F2E9EB5290037BC6D /* NotificationManager.swift */,
 				B525DFFC6879247E1E487ACD /* Assets.xcassets */,
 				7F9FCD61F29CD899C14BADD2 /* HabbitApp.entitlements */,
 				AE994B0C678C7596CA8B4A10 /* HabbitAppApp.swift */,
@@ -103,8 +102,17 @@
 				737A6F39296C1C2885C66183 /* Models */,
 				A17EC5A695648B34E7B5283F /* ViewModels */,
 				6CC284AB0A4E1C8F8928C99F /* Views */,
+				A1E63E78417949DFA06266CE /* Services */,
 			);
 			path = HabbitApp;
+			sourceTree = "<group>";
+		};
+		A1E63E78417949DFA06266CE /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				1B0A09B207714657BDE09AC5 /* NotificationManager.swift */,
+			);
+			path = Services;
 			sourceTree = "<group>";
 		};
 		67DE57E01274E08FF90B88FC /* HabbitAppTests */ = {
@@ -307,7 +315,7 @@
 				0F0272D48F7B5D243019F07A /* DailyRecord.swift in Sources */,
 				688F9E572E9F66E30037BC6D /* CycleReviewView.swift in Sources */,
 				713050A7717D4216E52F04F2 /* HabbitAppApp.swift in Sources */,
-				688F9E402E9EB5290037BC6D /* NotificationManager.swift in Sources */,
+				40F43B940F074C2B892F43B6 /* NotificationManager.swift in Sources */,
 				AA835E06B56B7A8F182E62DF /* Habit.swift in Sources */,
 				534E03A173CE9222EEC75144 /* HabitCheckView.swift in Sources */,
 				5DCEF68FC7733EA6B17DF29B /* HabitDetailView.swift in Sources */,
