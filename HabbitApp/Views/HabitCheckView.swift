@@ -4,12 +4,18 @@ import SwiftData
 struct HabitCheckView: View {
     let habit: Habit
     let viewModel: HabitViewModel
-    
+    var targetDate: Date? = nil // 옵셔널: nil이면 오늘, 값이 있으면 해당 날짜
+
     @Environment(\.dismiss) private var dismiss
     @State private var selectedLevel: CompletionLevel = .none
     @State private var selectedItems: [String] = []
     @State private var memo: String = ""
     @FocusState private var isMemoFocused: Bool
+
+    // 실제 사용할 날짜 계산
+    private var actualDate: Date {
+        targetDate ?? Date()
+    }
     
     var body: some View {
         ZStack {
@@ -24,8 +30,8 @@ struct HabitCheckView: View {
             ScrollView {
                 VStack(spacing: 24) {
                     // 상단 헤더
-                    HabitCheckHeader(habit: habit)
-                    
+                    HabitCheckHeader(habit: habit, targetDate: actualDate)
+
                     // 레벨 선택 버튼들
                     LevelSelectionButtons(
                         selectedLevel: $selectedLevel,
@@ -53,7 +59,8 @@ struct HabitCheckView: View {
                         habit: habit,
                         viewModel: viewModel,
                         dismiss: dismiss,
-                        isMemoFocused: $isMemoFocused
+                        isMemoFocused: $isMemoFocused,
+                        targetDate: actualDate
                     )
                 }
                 .padding()
@@ -74,47 +81,78 @@ struct HabitCheckView: View {
                 .foregroundColor(.white)
             }
         }
+        .onAppear {
+            loadExistingRecord()
+        }
+    }
+
+    // 기존 기록 불러오기
+    private func loadExistingRecord() {
+        let calendar = Calendar.current
+        let targetDayStart = calendar.startOfDay(for: actualDate)
+
+        if let existingRecord = habit.records.first(where: { record in
+            calendar.isDate(record.date, inSameDayAs: targetDayStart)
+        }) {
+            selectedLevel = existingRecord.level
+            selectedItems = existingRecord.selectedItems
+            memo = existingRecord.memo ?? ""
+        }
     }
 }
 
 // MARK: - 상단 헤더
 struct HabitCheckHeader: View {
     let habit: Habit
-    
+    let targetDate: Date
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text(getCurrentDate())
+                Text(getDateString())
                     .font(.title2)
                     .fontWeight(.bold)
                     .foregroundColor(.white)
-                
+
                 Spacer()
-                
-                Text("\(getCurrentDay())일 째")
+
+                Text("\(getDayNumber())일 째")
                     .font(.caption)
                     .foregroundColor(.white.opacity(0.8))
             }
-            
-            Text("멋져요! 실천하느라 수고하셨어요!")
+
+            Text(headerMessage)
                 .font(.headline)
                 .foregroundColor(.white)
         }
     }
-    
-    private func getCurrentDate() -> String {
+
+    private func getDateString() -> String {
         let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ko_KR")
         formatter.dateFormat = "M월 d일 (E)"
-        return formatter.string(from: Date())
+        return formatter.string(from: targetDate)
     }
-    
-    private func getCurrentDay() -> Int {
+
+    private func getDayNumber() -> Int {
+        let calendar = Calendar.current
+        let targetDayStart = calendar.startOfDay(for: targetDate)
+        let startDate = calendar.startOfDay(for: habit.startDate)
+
+        let daysSinceStart = calendar.dateComponents([.day], from: startDate, to: targetDayStart).day ?? 0
+        return daysSinceStart + 1
+    }
+
+    private var headerMessage: String {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
-        let startDate = calendar.startOfDay(for: habit.startDate)
-        
-        let daysSinceStart = calendar.dateComponents([.day], from: startDate, to: today).day ?? 0
-        return daysSinceStart + 1
+        let targetDayStart = calendar.startOfDay(for: targetDate)
+
+        if calendar.isDate(targetDayStart, inSameDayAs: today) {
+            return "멋져요! 실천하느라 수고하셨어요!"
+        } else {
+            return "과거 기록을 수정할 수 있어요"
+        }
     }
 }
 
@@ -360,7 +398,8 @@ struct BottomActionButtons: View {
     let viewModel: HabitViewModel
     let dismiss: DismissAction
     @FocusState.Binding var isMemoFocused: Bool
-    
+    let targetDate: Date
+
     var body: some View {
         HStack(spacing: 16) {
             Button(action: {
@@ -375,22 +414,23 @@ struct BottomActionButtons: View {
                     .cornerRadius(12)
             }
             .buttonStyle(PlainButtonStyle())
-            
+
             Button(action: {
                 print("🔄 완료 버튼 터치됨!")
                 print("   - selectedLevel: \(selectedLevel)")
                 print("   - memo: \(memo)")
                 print("   - selectedItems: \(selectedItems)")
-                
+                print("   - targetDate: \(targetDate)")
+
                 // 키보드 숨김
                 isMemoFocused = false
-                
+
                 viewModel.completeHabitWithItems(
                     habit,
                     level: selectedLevel,
                     selectedItems: selectedItems,
                     memo: memo.isEmpty ? nil : memo,
-                    date: Date()
+                    date: targetDate
                 )
                 dismiss()
             }) {
@@ -406,7 +446,7 @@ struct BottomActionButtons: View {
             .disabled(selectedLevel == .none && memo.isEmpty)
         }
     }
-    
+
     private var actionButtonText: String {
         if selectedLevel == .none && memo.isEmpty {
             return "실천 행동을 선택하거나 메모를 입력하세요"
@@ -423,7 +463,7 @@ struct BottomActionButtons: View {
         moreItems: ["헬스장 30분", "테니스 2시간"],
         maxItems: ["헬스 1시간", "테니스 2시간 이상"]
     )
-    
+
     NavigationStack {
         HabitCheckView(
             habit: habit,
@@ -431,7 +471,8 @@ struct BottomActionButtons: View {
                 modelContext: ModelContext(
                     try! ModelContainer(for: Habit.self, DailyRecord.self)
                 )
-            )
+            ),
+            targetDate: Date()
         )
     }
     .modelContainer(for: [Habit.self, DailyRecord.self], inMemory: true)

@@ -3,9 +3,14 @@ import SwiftData
 
 struct HomeView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.scenePhase) private var scenePhase
     @State private var viewModel: HabitViewModel?
     @State private var showAddHabit = false
     @State private var refreshTrigger = 0 // UI 새로고침 트리거
+    @State private var lastRefreshDate = Date()
+    
+    // 자정 체크용 타이머
+    let timer = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
     
     var body: some View {
         NavigationStack {
@@ -94,6 +99,34 @@ struct HomeView: View {
                 viewModel?.fetchHabits()
                 print("✅ 습관 목록 새로고침 완료, 현재 습관 수: \(viewModel?.habits.count ?? 0)")
             }
+            lastRefreshDate = Date()
+        }
+        .onChange(of: scenePhase) { oldPhase, newPhase in
+            // 앱이 active 상태로 돌아올 때
+            if newPhase == .active {
+                checkAndRefreshIfDateChanged()
+            }
+        }
+        .onReceive(timer) { _ in
+            // 1분마다 날짜 변경 체크
+            checkAndRefreshIfDateChanged()
+        }
+    }
+    
+    // 날짜가 바뀌었는지 확인하고 필요시 새로고침
+    private func checkAndRefreshIfDateChanged() {
+        let calendar = Calendar.current
+        let lastDate = calendar.startOfDay(for: lastRefreshDate)
+        let currentDate = calendar.startOfDay(for: Date())
+        
+        // 날짜가 바뀌었으면 뷰 새로고침
+        if lastDate != currentDate {
+            print("🔄 날짜 변경 감지: \(lastDate) -> \(currentDate)")
+            print("🔄 뷰 새로고침 시작")
+            viewModel?.fetchHabits()
+            refreshTrigger += 1
+            lastRefreshDate = Date()
+            print("✅ 날짜 변경으로 인한 뷰 새로고침 완료")
         }
     }
 }
@@ -300,16 +333,33 @@ struct HabitCardActiveView: View {
                             LevelCountText(level: "MAX", count: maxCount)
                         }
 
-                        // SKIP 날짜들 표시
+                        // 과거 날짜들과 TODAY 버튼 공간
                         HStack {
                             Spacer()
                             HStack(spacing: 8) {
-                                Text("12일 (월)")
-                                    .font(.caption)
-                                    .foregroundColor(.white.opacity(0.7))
-                                Text("13일 (월)")
-                                    .font(.caption)
-                                    .foregroundColor(.white.opacity(0.7))
+                                // 그저께 버튼 (오늘 -2일) - 먼저 표시
+                                if let twoDaysAgoData = getDayData(daysAgo: 2) {
+                                    PastDayButton(
+                                        habit: habit,
+                                        date: twoDaysAgoData.date,
+                                        dayString: twoDaysAgoData.dayString,
+                                        isCompleted: twoDaysAgoData.isCompleted,
+                                        habitColor: habitColor,
+                                        viewModel: viewModel
+                                    )
+                                }
+
+                                // 어제 버튼 (오늘 -1일) - 나중에 표시
+                                if let yesterdayData = getDayData(daysAgo: 1) {
+                                    PastDayButton(
+                                        habit: habit,
+                                        date: yesterdayData.date,
+                                        dayString: yesterdayData.dayString,
+                                        isCompleted: yesterdayData.isCompleted,
+                                        habitColor: habitColor,
+                                        viewModel: viewModel
+                                    )
+                                }
 
                                 // TODAY 버튼을 위한 공간 확보
                                 Spacer()
@@ -392,6 +442,78 @@ struct HabitCardActiveView: View {
     
     private var maxCount: Int {
         habit.records.filter { $0.level == .max }.count
+    }
+
+    // 과거 날짜 데이터 가져오기
+    private func getDayData(daysAgo: Int) -> (date: Date, dayString: String, isCompleted: Bool)? {
+        let calendar = Calendar.current
+        guard let targetDate = calendar.date(byAdding: .day, value: -daysAgo, to: Date()) else {
+            return nil
+        }
+
+        let targetDayStart = calendar.startOfDay(for: targetDate)
+
+        // 습관 시작일보다 이전이면 nil 반환
+        let habitStartDay = calendar.startOfDay(for: habit.startDate)
+        if targetDayStart < habitStartDay {
+            return nil
+        }
+
+        // 날짜 포맷팅 (예: "10/22(수)")
+        let dateFormatter = DateFormatter()
+        dateFormatter.locale = Locale(identifier: "ko_KR")
+        dateFormatter.dateFormat = "M/d(E)"
+        let dayString = dateFormatter.string(from: targetDate)
+
+        // 해당 날짜의 완료 여부 확인
+        let isCompleted = habit.records.contains { record in
+            calendar.isDate(record.date, inSameDayAs: targetDayStart) && record.level != .none
+        }
+
+        return (targetDate, dayString, isCompleted)
+    }
+}
+
+// MARK: - 과거 날짜 버튼
+struct PastDayButton: View {
+    let habit: Habit
+    let date: Date
+    let dayString: String
+    let isCompleted: Bool
+    let habitColor: Color
+    let viewModel: HabitViewModel
+
+    var body: some View {
+        NavigationLink(destination: HabitCheckView(habit: habit, viewModel: viewModel, targetDate: date)) {
+            ZStack {
+                Circle()
+                    .fill(buttonColor)
+                    .frame(width: 50, height: 50)
+
+                if isCompleted {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(.white)
+                } else {
+                    Text(dayString)
+                        .font(.system(size: 9))
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white.opacity(0.7))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                }
+            }
+            .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+
+    private var buttonColor: Color {
+        if isCompleted {
+            return habitColor.opacity(0.7) // 완료된 경우 습관 색상의 70%
+        } else {
+            return .white.opacity(0.2) // 미완료 시 투명한 흰색
+        }
     }
 }
 
